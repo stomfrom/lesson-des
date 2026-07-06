@@ -53,11 +53,11 @@
       @row-click="handleRowClick"
       row-class-name="clickable-row"
     >
-      <el-table-column prop="id" label="ID" width="70" sortable="custom" />
-      <el-table-column prop="name" label="设备名" min-width="150" sortable="custom" />
-      <el-table-column prop="model" label="型号" min-width="120" sortable="custom" />
-      <el-table-column prop="location" label="位置" min-width="150" sortable="custom" />
-      <el-table-column prop="status" label="状态" width="150" sortable="custom">
+      <el-table-column prop="id" label="ID" width="70" sortable="true" />
+      <el-table-column prop="name" label="设备名" min-width="150" sortable="true" />
+      <el-table-column prop="model" label="型号" min-width="120" sortable="true" />
+      <el-table-column prop="location" label="位置" min-width="150" sortable="true" />
+      <el-table-column prop="status" label="状态" width="150" sortable="true">
         <template #default="{ row }">
           <el-tag :type="statusType(row.status)">{{ statusLabel(row.status) }}</el-tag>
           <el-tag v-if="isMaintenanceSoon(row)" type="warning" size="small" class="maintenance-tag">
@@ -65,7 +65,7 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="last_maintenance_date" label="上次维保日期" width="140" sortable="custom">
+      <el-table-column prop="last_maintenance_date" label="上次维保日期" width="140" sortable="true">
         <template #default="{ row }">
           {{ toLocalDate(row.last_maintenance_date) || '—' }}
         </template>
