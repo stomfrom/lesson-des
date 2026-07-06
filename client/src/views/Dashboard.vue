@@ -1,7 +1,20 @@
+/**
+ * ====================================================
+ * 数据概览页（Dashboard）
+ * ====================================================
+ * 登录后默认展示的设备统计看板。
+ *
+ * 数据区：
+ * - 统计卡片：总数 / 正常运行 / 维保中 / 已报废 / 即将维保
+ * - 最近添加的 5 台设备
+ * - 快捷操作按钮
+ * ====================================================
+ */
 <template>
   <div class="dashboard">
     <h2>数据概览</h2>
 
+    <!-- 统计卡片 -->
     <div class="stat-row">
       <el-card class="stat-card total" shadow="hover">
         <div class="stat-value">{{ stats.total }}</div>
@@ -26,11 +39,10 @@
     </div>
 
     <div class="content-row">
+      <!-- 最近设备 -->
       <el-card class="recent-card" shadow="hover">
         <template #header>
-          <div class="card-header">
-            <span>最近添加的设备</span>
-          </div>
+          <div class="card-header"><span>最近添加的设备</span></div>
         </template>
         <el-table :data="stats.recent" stripe size="small" v-if="stats.recent && stats.recent.length > 0">
           <el-table-column prop="name" label="设备名" min-width="120" />
@@ -45,22 +57,15 @@
         <el-empty v-else description="暂无设备数据" :image-size="80" />
       </el-card>
 
+      <!-- 快捷操作 -->
       <el-card class="action-card" shadow="hover">
         <template #header>
-          <div class="card-header">
-            <span>快捷操作</span>
-          </div>
+          <div class="card-header"><span>快捷操作</span></div>
         </template>
         <div class="action-list">
-          <el-button type="primary" @click="$router.push({ name: 'DeviceAdd' })" class="action-btn">
-            新增设备
-          </el-button>
-          <el-button @click="$router.push({ name: 'DeviceList' })" class="action-btn">
-            查看设备列表
-          </el-button>
-          <el-button v-if="isAdmin" @click="$router.push({ name: 'UserManage' })" class="action-btn">
-            用户管理
-          </el-button>
+          <el-button type="primary" @click="$router.push({ name: 'DeviceAdd' })" class="action-btn">新增设备</el-button>
+          <el-button @click="$router.push({ name: 'DeviceList' })" class="action-btn">查看设备列表</el-button>
+          <el-button v-if="isAdmin" @click="$router.push({ name: 'UserManage' })" class="action-btn">用户管理</el-button>
         </div>
       </el-card>
     </div>
@@ -88,6 +93,7 @@ const stats = ref({
   recent: []
 })
 
+/** 获取统计数据和最近设备 */
 async function fetchStats() {
   try {
     const res = await getDeviceStats()
@@ -103,9 +109,7 @@ onMounted(() => fetchStats())
 </script>
 
 <style scoped>
-.dashboard {
-  padding: 24px;
-}
+.dashboard { padding: 24px; }
 .stat-row {
   display: flex;
   gap: 16px;
@@ -132,26 +136,10 @@ onMounted(() => fetchStats())
 .maintenance .stat-value { color: #e6a23c; }
 .scrapped .stat-value { color: #909399; }
 .warning .stat-value { color: #f56c6c; }
-.content-row {
-  display: flex;
-  gap: 16px;
-  margin-top: 16px;
-}
-.recent-card {
-  flex: 2;
-}
-.action-card {
-  flex: 1;
-}
-.card-header {
-  font-weight: 600;
-}
-.action-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.action-btn {
-  width: 100%;
-}
+.content-row { display: flex; gap: 16px; margin-top: 16px; }
+.recent-card { flex: 2; }
+.action-card { flex: 1; }
+.card-header { font-weight: 600; }
+.action-list { display: flex; flex-direction: column; gap: 12px; }
+.action-btn { width: 100%; }
 </style>

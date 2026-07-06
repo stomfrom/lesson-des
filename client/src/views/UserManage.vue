@@ -1,3 +1,14 @@
+/**
+ * ====================================================
+ * 用户管理页（管理员专属）
+ * ====================================================
+ * 功能：
+ * - 用户列表（含角色/权限）
+ * - 新增用户（弹窗表单）
+ * - 实时分配/回收权限（checkbox 勾选即生效）
+ * - 删除用户（二次确认，禁止删除自己和管理员）
+ * ====================================================
+ */
 <template>
   <div class="user-manage">
     <div class="page-header">
@@ -78,6 +89,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getUsers, setUserPermissions, createUser, deleteUser } from '@/api/permission.js'
 
+/** 设备权限操作选项 */
 const ACTIONS = [
   { label: '查看', value: 'read' },
   { label: '新增', value: 'create' },
@@ -88,7 +100,7 @@ const ACTIONS = [
 const loading = ref(false)
 const saving = ref(false)
 const users = ref([])
-const permsMap = ref({})
+const permsMap = ref({})          // { userId: ['read', 'create', ...] }
 const dialogVisible = ref(false)
 const formRef = ref(null)
 
@@ -104,10 +116,12 @@ const rules = {
   ]
 }
 
+/** 获取指定用户的权限数组 */
 function getPerms(userId) {
   return permsMap.value[userId] || []
 }
 
+/** 加载用户列表 */
 async function fetchUsers() {
   loading.value = true
   try {
@@ -125,6 +139,7 @@ async function fetchUsers() {
   }
 }
 
+/** 权限变更 → 实时保存 */
 async function onPermChange(userId, actions) {
   try {
     await setUserPermissions(userId, { resource: 'device', actions })
@@ -135,13 +150,13 @@ async function onPermChange(userId, actions) {
   }
 }
 
+/** 新增用户 */
 async function handleCreate() {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
   saving.value = true
   try {
-    const res = await createUser(form)
-    // 新用户默认不授予任何权限，后台已注册成功
+    await createUser(form)
     ElMessage.success(`用户 ${form.username} 创建成功`)
     dialogVisible.value = false
     form.username = ''
@@ -156,6 +171,7 @@ async function handleCreate() {
   }
 }
 
+/** 删除用户 */
 async function handleDeleteUser(id, username) {
   try {
     await deleteUser(id)
@@ -171,13 +187,6 @@ onMounted(() => fetchUsers())
 </script>
 
 <style scoped>
-.user-manage {
-  padding: 24px;
-}
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
+.user-manage { padding: 24px; }
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 </style>

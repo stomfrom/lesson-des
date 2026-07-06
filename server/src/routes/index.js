@@ -1,3 +1,13 @@
+/**
+ * ====================================================
+ * 路由总控
+ * ====================================================
+ * 挂载所有子路由模块，配置中间件层级。
+ *
+ * 中间件链：security → body → routes → errorHandler
+ * 路由顺序：public → auth → protected
+ * ====================================================
+ */
 import { Router } from 'express'
 import pool from '../config/db.js'
 import authMiddleware from '../middleware/auth.js'
@@ -7,7 +17,7 @@ import permissionsRouter from './permissions.js'
 
 const router = Router()
 
-// 健康检查（无需认证，不暴露内部细节）
+/** 健康检查（无需认证，仅返回连通性） */
 router.get('/health', async (req, res) => {
   try {
     await pool.query('SELECT 1')
@@ -17,11 +27,11 @@ router.get('/health', async (req, res) => {
   }
 })
 
-// 认证路由（无需认证）
+/** 认证相关路由（登录/注册，无需 token） */
 router.use(authRouter)
 
-// 需要认证的路由
-router.use('/devices', authMiddleware, devicesRouter)
-router.use(authMiddleware, permissionsRouter)
+/** 受保护路由（需 JWT 认证） */
+router.use('/devices', authMiddleware, devicesRouter)          // 设备 CRUD
+router.use(authMiddleware, permissionsRouter)                  // 用户/权限管理（admin only）
 
 export default router

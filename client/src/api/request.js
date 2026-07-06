@@ -1,3 +1,13 @@
+/**
+ * ====================================================
+ * Axios HTTP 客户端
+ * ====================================================
+ * 功能：
+ * - 请求拦截器自动注入 JWT
+ * - 响应拦截器解包 response.data
+ * - 401 自动清除凭证并跳转登录页
+ * ====================================================
+ */
 import axios from 'axios'
 import { useUserStore } from '@/store/modules/user'
 
@@ -7,22 +17,28 @@ const request = axios.create({
   headers: { 'Content-Type': 'application/json' }
 })
 
-// 响应拦截器 — 统一错误处理
+/**
+ * 响应拦截器（先注册，确保后执行）
+ * 1. 成功时解包 response.data
+ * 2. 401 时同步清理 Pinia store 和 localStorage
+ */
 request.interceptors.response.use(
   (response) => response.data,
   (error) => {
     if (error.response?.status === 401) {
-      // 同步清理 store 和 localStorage
-      useUserStore().logout()
+      useUserStore().logout()                       // 同步清理 Pinia + localStorage
       if (window.location.pathname !== '/login') {
-        window.location.href = '/login'
+        window.location.href = '/login'             // 跳转登录
       }
     }
     return Promise.reject(error)
   }
 )
 
-// 请求拦截器 — 注入 token
+/**
+ * 请求拦截器
+ * 从 localStorage 读取 token，注入 Authorization header
+ */
 request.interceptors.request.use((config) => {
   const token = localStorage.getItem('token')
   if (token) {

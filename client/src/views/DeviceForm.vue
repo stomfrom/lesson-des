@@ -1,3 +1,17 @@
+/**
+ * ====================================================
+ * 设备新增/编辑表单页
+ * ====================================================
+ * 新增和编辑共用同一组件，通过路由中是否包含 :id
+ * 判断当前操作模式。
+ *
+ * 功能特性：
+ * - Element Plus 表单验证（设备名/型号/位置必填）
+ * - 编辑模式回显已有数据
+ * - 脏表单保护：有未保存修改时离开弹窗确认
+ * - 日期选择器禁止选择未来日期
+ * ====================================================
+ */
 <template>
   <div class="device-form">
     <div class="page-header">
@@ -63,9 +77,13 @@ const route = useRoute()
 const formRef = ref(null)
 const pageLoading = ref(false)
 const submitting = ref(false)
+
+/** 脏表单标记：表单是否有未保存的修改 */
 const isDirty = ref(false)
+/** 用于编辑模式加载数据时暂时屏蔽 dirty watch */
 let suppressDirtyWatch = false
 
+/** 当前是否为编辑模式（路由含 :id） */
 const isEdit = computed(() => !!route.params.id)
 
 const form = reactive({
@@ -76,6 +94,7 @@ const form = reactive({
   last_maintenance_date: ''
 })
 
+/** 表单验证规则 */
 const rules = {
   name: [
     { required: true, message: '请输入设备名', trigger: 'blur' },
@@ -91,10 +110,12 @@ const rules = {
   ]
 }
 
+/** 禁止选择未来日期 */
 function disableFutureDate(date) {
   return date.getTime() > Date.now()
 }
 
+/** 编辑模式：加载已有设备数据回填表单 */
 async function loadDevice() {
   if (!route.params.id) return
   pageLoading.value = true
@@ -117,6 +138,7 @@ async function loadDevice() {
   }
 }
 
+/** 提交表单 */
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
@@ -139,6 +161,7 @@ async function handleSubmit() {
   }
 }
 
+/** 返回按钮：有脏表单时弹窗确认 */
 async function goBack() {
   if (isDirty.value) {
     try {
@@ -154,7 +177,7 @@ async function goBack() {
   router.push({ name: 'DeviceList' })
 }
 
-// 监听任意字段变化，标记表单为脏（加载数据时抑制）
+/** 监听表单数据变化自动标记脏状态（加载数据期间抑制） */
 watch(form, () => {
   if (!suppressDirtyWatch) isDirty.value = true
 }, { deep: true })
@@ -163,10 +186,6 @@ onMounted(() => loadDevice())
 </script>
 
 <style scoped>
-.device-form {
-  padding: 24px;
-}
-.page-header {
-  margin-bottom: 24px;
-}
+.device-form { padding: 24px; }
+.page-header { margin-bottom: 24px; }
 </style>

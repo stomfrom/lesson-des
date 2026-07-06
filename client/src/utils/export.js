@@ -1,7 +1,20 @@
-import { toLocalDate, toLocalDatetime } from './date.js'
 /**
- * 将表格数据导出为 CSV 文件
- * @param {Object[]} data - 数据数组
+ * ====================================================
+ * CSV 导出工具
+ * ====================================================
+ * 将表格数据导出为 UTF-8 BOM CSV 文件。
+ *
+ * 安全措施：
+ * - 公式注入防护：单元格以 = + - @ \t \r 开头时加单引号转义
+ * - Windows 文件名兼容：替换非法字符
+ * - DOM 兼容：<a> 元素追加到 body 后再 click
+ * ====================================================
+ */
+import { toLocalDate, toLocalDatetime } from './date.js'
+
+/**
+ * 导出 CSV 文件
+ * @param {Object[]} data - 要导出的数据数组
  * @param {string} filename - 文件名（不含扩展名）
  */
 export function exportCSV(data, filename = '设备列表') {
@@ -12,7 +25,7 @@ export function exportCSV(data, filename = '设备列表') {
 
   const rows = data.map(row => [
     row.id,
-    String(row.name || '').replace(/^[=+\-@\t\r]/, "'$&"),  // CSV 公式注入防护
+    String(row.name || '').replace(/^[=+\-@\t\r]/, "'$&"),      // 公式注入防护
     String(row.model || '').replace(/^[=+\-@\t\r]/, "'$&"),
     String(row.location || '').replace(/^[=+\-@\t\r]/, "'$&"),
     statusMap[row.status] || row.status,
@@ -20,7 +33,7 @@ export function exportCSV(data, filename = '设备列表') {
     toLocalDatetime(row.created_at)
   ])
 
-  // BOM + CSV 内容
+  // BOM 确保 Excel 正确识别 UTF-8
   const bom = '\uFEFF'
   const csvContent = [
     headers.join(','),

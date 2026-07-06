@@ -1,3 +1,13 @@
+/**
+ * ====================================================
+ * 登录页
+ * ====================================================
+ * - 表单验证（用户名/密码必填）
+ * - 登录成功后保存 token 和用户信息
+ * - 支持 redirect 参数登录后跳转回原页面
+ *   （安全限制：仅允许相对路径，防开放重定向）
+ * ====================================================
+ */
 <template>
   <div class="login-page">
     <el-card class="login-card" shadow="hover">
@@ -43,6 +53,7 @@ const rules = {
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
 }
 
+/** 提交登录 */
 async function handleLogin() {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
@@ -53,6 +64,8 @@ async function handleLogin() {
     userStore.setToken(res.data.token)
     userStore.setUserInfo(res.data.userInfo)
     ElMessage.success('登录成功')
+
+    // 安全跳转：仅允许以 / 开头的相对路径，禁止 // 协议跳转
     const raw = route.query.redirect
     const safe = (typeof raw === 'string' && raw.startsWith('/') && !raw.startsWith('//')) ? raw : null
     router.push(safe || { name: 'Dashboard' })

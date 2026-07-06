@@ -1,5 +1,18 @@
+/**
+ * ====================================================
+ * 默认布局组件
+ * ====================================================
+ * 包含顶部导航栏 + 主内容区 + 页脚。
+ * 登录页隐藏导航栏和页脚。
+ *
+ * 导航菜单根据角色动态显示：
+ *   全部用户 → 数据概览 / 设备管理
+ *   admin   → 额外显示「用户管理」
+ * ====================================================
+ */
 <template>
   <div class="layout-default">
+    <!-- 导航栏（登录页隐藏） -->
     <header v-if="!isLoginPage" class="layout-header">
       <div class="header-left">
         <h1 class="logo">星维设备管理</h1>
@@ -14,9 +27,13 @@
         <el-button type="danger" size="small" plain @click="handleLogout">退出登录</el-button>
       </div>
     </header>
+
+    <!-- 主内容区 -->
     <main class="layout-main">
       <router-view />
     </main>
+
+    <!-- 页脚（登录页隐藏） -->
     <footer v-if="!isLoginPage" class="layout-footer">
       <p>&copy; 2026 星维设备管理系统</p>
     </footer>
@@ -32,13 +49,17 @@ const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
+/** 当前是否为登录页（控制导航栏/页脚显隐） */
 const isLoginPage = computed(() => route.name === 'Login')
+/** 当前用户是否为管理员 */
 const isAdmin = computed(() => userStore.userInfo?.role === 'admin')
+/** 用户显示名称（昵称 > 用户名 > 默认） */
 const userDisplay = computed(() => {
   const info = userStore.userInfo
   return info?.nickname || info?.username || '用户'
 })
 
+/** 退出登录 */
 function handleLogout() {
   userStore.logout()
   router.push({ name: 'Login' })
