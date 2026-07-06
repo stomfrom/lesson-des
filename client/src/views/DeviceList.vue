@@ -52,7 +52,7 @@
       </el-table-column>
       <el-table-column prop="last_maintenance_date" label="上次维保日期" width="140" sortable="custom">
         <template #default="{ row }">
-          {{ row.last_maintenance_date || '—' }}
+          {{ toLocalDate(row.last_maintenance_date) || '—' }}
         </template>
       </el-table-column>
       <el-table-column label="操作" width="160" fixed="right">
@@ -101,10 +101,10 @@
           </el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="上次维保日期">
-          {{ detailData.last_maintenance_date || '未维保' }}
+          {{ toLocalDate(detailData.last_maintenance_date) || '未维保' }}
         </el-descriptions-item>
-        <el-descriptions-item label="创建时间">{{ detailData.created_at }}</el-descriptions-item>
-        <el-descriptions-item label="更新时间">{{ detailData.updated_at }}</el-descriptions-item>
+        <el-descriptions-item label="创建时间">{{ toLocalDatetime(detailData.created_at) }}</el-descriptions-item>
+        <el-descriptions-item label="更新时间">{{ toLocalDatetime(detailData.updated_at) }}</el-descriptions-item>
       </el-descriptions>
     </el-dialog>
   </div>
@@ -117,6 +117,7 @@ import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
 import { getDevices, deleteDevice, getDevice } from '@/api/device.js'
 import { exportCSV } from '@/utils/export.js'
+import { toLocalDate, toLocalDatetime } from '@/utils/date.js'
 
 const STATUS_OPTIONS = [
   { label: '正常', value: 'normal' },

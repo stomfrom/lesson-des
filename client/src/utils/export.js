@@ -1,3 +1,4 @@
+import { toLocalDate, toLocalDatetime } from './date.js'
 /**
  * 将表格数据导出为 CSV 文件
  * @param {Object[]} data - 数据数组
@@ -15,8 +16,8 @@ export function exportCSV(data, filename = '设备列表') {
     row.model,
     row.location,
     statusMap[row.status] || row.status,
-    row.last_maintenance_date || '',
-    row.created_at || ''
+    toLocalDate(row.last_maintenance_date),
+    toLocalDatetime(row.created_at)
   ])
 
   // BOM + CSV 内容
