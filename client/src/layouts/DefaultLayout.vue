@@ -1,6 +1,6 @@
 <template>
   <div class="layout-default">
-    <header class="layout-header">
+    <header v-if="!isLoginPage" class="layout-header">
       <div class="header-left">
         <h1 class="logo">星维设备管理</h1>
         <nav class="nav-menu">
@@ -17,7 +17,7 @@
     <main class="layout-main">
       <router-view />
     </main>
-    <footer class="layout-footer">
+    <footer v-if="!isLoginPage" class="layout-footer">
       <p>&copy; 2026 星维设备管理系统</p>
     </footer>
   </div>
@@ -25,12 +25,14 @@
 
 <script setup>
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/store/modules/user'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 
+const isLoginPage = computed(() => route.name === 'Login')
 const isAdmin = computed(() => userStore.userInfo?.role === 'admin')
 const userDisplay = computed(() => {
   const info = userStore.userInfo

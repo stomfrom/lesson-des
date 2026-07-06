@@ -30,7 +30,7 @@ export async function listUsers(req, res, next) {
 export async function getUserPermissions(req, res, next) {
   try {
     const userId = parseInt(req.params.userId, 10)
-    if (isNaN(userId)) return res.status(400).json({ code: 400, message: '无效的用户 ID' })
+    if (isNaN(userId) || userId <= 0) return res.status(400).json({ code: 400, message: '无效的用户 ID' })
 
     const [users] = await pool.execute(
       'SELECT id, username, nickname, role FROM users WHERE id = ?', [userId]
@@ -47,7 +47,7 @@ export async function getUserPermissions(req, res, next) {
 export async function setUserPermissions(req, res, next) {
   try {
     const userId = parseInt(req.params.userId, 10)
-    if (isNaN(userId)) return res.status(400).json({ code: 400, message: '无效的用户 ID' })
+    if (isNaN(userId) || userId <= 0) return res.status(400).json({ code: 400, message: '无效的用户 ID' })
 
     const [users] = await pool.execute(
       'SELECT id, role FROM users WHERE id = ?', [userId]

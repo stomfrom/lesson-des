@@ -184,7 +184,7 @@ async function fetchDevices() {
     }
     if (filterName.value) params.name = filterName.value
     if (filterStatus.value) params.status = filterStatus.value
-    const res = await getDevices(params)
+    const res = await getDevices(params, { signal: abortController.signal })
     devices.value = res.list || []
     total.value = res.total || 0
   } catch (e) {

@@ -1,6 +1,6 @@
 import 'dotenv/config'
 
-const requiredEnvVars = ['DB_USER', 'DB_NAME']
+const requiredEnvVars = ['DB_USER', 'DB_NAME', 'DB_PASSWORD']
 
 if (!process.env.JWT_SECRET) {
   if (process.env.NODE_ENV === 'production') {
@@ -29,7 +29,7 @@ export default {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT, 10) || 3306,
     user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD || '',
+    password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
     waitForConnections: true,
     connectionLimit: 10,

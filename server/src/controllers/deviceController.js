@@ -40,8 +40,17 @@ export async function createDevice(req, res, next) {
     if (status && !VALID_STATUS.includes(status)) {
       return res.status(400).json({ code: 400, message: `状态值无效，允许: ${VALID_STATUS.join(', ')}` })
     }
+    if (status === '') {
+      return res.status(400).json({ code: 400, message: '状态值不能为空' })
+    }
     if (name.length > 100 || model.length > 100 || location.length > 200) {
       return res.status(400).json({ code: 400, message: '输入字段超出长度限制' })
+    }
+    if (last_maintenance_date) {
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/
+      if (!dateRegex.test(last_maintenance_date) || isNaN(Date.parse(last_maintenance_date))) {
+        return res.status(400).json({ code: 400, message: '维保日期格式无效，应为 YYYY-MM-DD' })
+      }
     }
 
     const device = await Device.create({ name, model, location, status, last_maintenance_date })
@@ -63,8 +72,17 @@ export async function updateDevice(req, res, next) {
     if (status && !VALID_STATUS.includes(status)) {
       return res.status(400).json({ code: 400, message: `状态值无效，允许: ${VALID_STATUS.join(', ')}` })
     }
+    if (status === '') {
+      return res.status(400).json({ code: 400, message: '状态值不能为空' })
+    }
     if (name.length > 100 || model.length > 100 || location.length > 200) {
       return res.status(400).json({ code: 400, message: '输入字段超出长度限制' })
+    }
+    if (last_maintenance_date) {
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/
+      if (!dateRegex.test(last_maintenance_date) || isNaN(Date.parse(last_maintenance_date))) {
+        return res.status(400).json({ code: 400, message: '维保日期格式无效，应为 YYYY-MM-DD' })
+      }
     }
 
     const result = await Device.update(id, { name, model, location, status, last_maintenance_date })

@@ -9,7 +9,7 @@ class Device {
 
     if (name) {
       sql += ' AND name LIKE ?'
-      params.push(`%${name}%`)
+      params.push(`%${name.replace(/[%_]/g, '\\$&')}%`)
     }
     if (status) {
       sql += ' AND status = ?'
@@ -47,9 +47,6 @@ class Device {
   }
 
   static async update(id, fields) {
-    const existing = await this.findById(id)
-    if (!existing) return { notFound: true }
-
     const allowed = ['name', 'model', 'location', 'status', 'last_maintenance_date']
     const updates = []
     const params = []
@@ -64,9 +61,10 @@ class Device {
     if (updates.length === 0) return { noChange: true }
 
     params.push(id)
-    await pool.execute(
+    const [result] = await pool.execute(
       `UPDATE devices SET ${updates.join(', ')} WHERE id = ?`, params
     )
+    if (result.affectedRows === 0) return { notFound: true }
     return this.findById(id)
   }
 

@@ -45,6 +45,12 @@ const server = app.listen(config.port, () => {
 // ─── 优雅关闭 ───
 async function gracefulShutdown(signal) {
   console.log(`\n[Shixun Server] Received ${signal}, shutting down gracefully...`)
+
+  const forceExit = setTimeout(() => {
+    console.error('[Shixun Server] Forced shutdown after timeout')
+    process.exit(1)
+  }, 10000)
+
   server.close(async () => {
     try {
       await pool.end()
@@ -52,9 +58,17 @@ async function gracefulShutdown(signal) {
     } catch (err) {
       console.error('[Shixun Server] Error closing database:', err.message)
     }
+    clearTimeout(forceExit)
     process.exit(0)
   })
 }
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
 process.on('SIGINT', () => gracefulShutdown('SIGINT'))
+process.on('unhandledRejection', (reason) => {
+  console.error('[FATAL] Unhandled Rejection:', reason instanceof Error ? reason.message : reason)
+})
+process.on('uncaughtException', (err) => {
+  console.error('[FATAL] Uncaught Exception:', err.message)
+  process.exit(1)
+})

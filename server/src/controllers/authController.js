@@ -58,6 +58,9 @@ export async function register(req, res, next) {
     if (password.length < 6) {
       return res.status(400).json({ code: 400, message: '密码至少 6 个字符' })
     }
+    if (nickname && nickname.length > 50) {
+      return res.status(400).json({ code: 400, message: '昵称不能超过 50 个字符' })
+    }
 
     const existing = await User.findByUsername(username)
     if (existing) {

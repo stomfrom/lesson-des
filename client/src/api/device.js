@@ -1,7 +1,7 @@
 import request from './request.js'
 
-export function getDevices(params = {}) {
-  return request.get('/devices', { params })
+export function getDevices(params = {}, extra = {}) {
+  return request.get('/devices', { params, ...extra })
 }
 
 export function getDevice(id) {

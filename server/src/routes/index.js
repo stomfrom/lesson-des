@@ -7,13 +7,13 @@ import permissionsRouter from './permissions.js'
 
 const router = Router()
 
-// 健康检查（无需认证）
+// 健康检查（无需认证，不暴露内部细节）
 router.get('/health', async (req, res) => {
   try {
     await pool.query('SELECT 1')
-    res.json({ code: 200, message: 'OK', db: 'connected', timestamp: Date.now() })
+    res.json({ code: 200, message: 'OK', timestamp: Date.now() })
   } catch (err) {
-    res.status(503).json({ code: 503, message: '数据库连接异常', db: 'disconnected' })
+    res.status(503).json({ code: 503, message: '服务不可用' })
   }
 })
 
