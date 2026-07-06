@@ -12,6 +12,7 @@
  * ====================================================
  */
 import Device from '../models/Device.js'
+import Setting from '../models/Setting.js'
 
 /** 允许的设备状态枚举 */
 const VALID_STATUS = ['normal', 'maintenance', 'scrapped']
@@ -122,10 +123,13 @@ export async function updateDevice(req, res, next) {
   }
 }
 
-/** GET /api/devices/stats — Dashboard 统计数据 */
+/** GET /api/devices/stats — Dashboard 统计数据（含生命周期自动流转） */
 export async function getDeviceStats(req, res, next) {
   try {
-    const stats = await Device.getStats()
+    const settings = await Setting.getAll()
+    const mm = parseInt(settings.maintenance_months, 10) || 11
+    const sm = parseInt(settings.scrap_months, 10) || 12
+    const stats = await Device.getStats(mm, sm)
     res.json({ code: 200, data: stats })
   } catch (err) {
     next(err)

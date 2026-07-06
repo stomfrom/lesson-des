@@ -58,6 +58,12 @@ const routes = [
     meta: { title: '用户管理', requiresAuth: true, requireAdmin: true }
   },
   {
+    path: '/settings',
+    name: 'LifecycleSettings',
+    component: () => import('@/views/LifecycleSettings.vue'),
+    meta: { title: '生命周期配置', requiresAuth: true, requireAdmin: true }
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/views/NotFound.vue'),

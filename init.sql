@@ -53,3 +53,16 @@ CREATE TABLE IF NOT EXISTS `permissions` (
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
   UNIQUE KEY `uk_user_resource_action` (`user_id`, `resource`, `action`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户权限表';
+
+-- ---------------------------------------------------------
+-- 系统配置表
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `settings` (
+  `setting_key` VARCHAR(100) PRIMARY KEY,
+  `setting_value` TEXT NOT NULL,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统配置表';
+
+INSERT IGNORE INTO `settings` (`setting_key`, `setting_value`) VALUES
+('maintenance_months', '11'),
+('scrap_months', '12');

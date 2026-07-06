@@ -14,6 +14,7 @@ import authMiddleware from '../middleware/auth.js'
 import authRouter from './auth.js'
 import devicesRouter from './devices.js'
 import permissionsRouter from './permissions.js'
+import settingsRouter from './settings.js'
 
 const router = Router()
 
@@ -33,5 +34,6 @@ router.use(authRouter)
 /** 受保护路由（需 JWT 认证） */
 router.use('/devices', authMiddleware, devicesRouter)          // 设备 CRUD
 router.use(authMiddleware, permissionsRouter)                  // 用户/权限管理（admin only）
+router.use(authMiddleware, settingsRouter)                     // 系统配置
 
 export default router

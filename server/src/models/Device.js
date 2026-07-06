@@ -95,7 +95,12 @@ class Device {
   }
 
   /** ── Dashboard 统计数据 ── */
-  static async getStats() {
+  static async getStats(maintenanceMonths, scrapMonths) {
+    // 先执行生命周期流转规则
+    if (maintenanceMonths && scrapMonths) {
+      await this.applyLifecycleRules(maintenanceMonths, scrapMonths)
+    }
+
     // Q1: 各状态计数 (GROUP BY)
     const [statusRows] = await pool.execute(
       `SELECT status, COUNT(*) AS count FROM devices GROUP BY status`
@@ -127,6 +132,38 @@ class Device {
       maintenanceDue: dueRows[0].count,
       recent: recentRows
     }
+  }
+
+  /**
+   * 根据生命周期规则自动流转设备状态
+   * @param {number} maintenanceMonths 未维保 N 月 → 维保中
+   * @param {number} scrapMonths       维保中 N 月 → 已报废
+   * @returns {{ updated: number }} 更新的设备数
+   */
+  static async applyLifecycleRules(maintenanceMonths, scrapMonths) {
+    let updated = 0
+
+    // 规则 1: 正常 → 维保中（超过 maintenanceMonths 个月未维保）
+    const [r1] = await pool.execute(
+      `UPDATE devices SET status = 'maintenance'
+       WHERE status = 'normal'
+         AND last_maintenance_date IS NOT NULL
+         AND TIMESTAMPDIFF(MONTH, last_maintenance_date, CURDATE()) >= ?`,
+      [maintenanceMonths]
+    )
+    updated += r1.affectedRows
+
+    // 规则 2: 维保中 → 已报废（状态停留在 maintenance 超过 scrapMonths 个月）
+    // 使用 updated_at 近似判断进入维保状态的时长
+    const [r2] = await pool.execute(
+      `UPDATE devices SET status = 'scrapped'
+       WHERE status = 'maintenance'
+         AND TIMESTAMPDIFF(MONTH, updated_at, CURDATE()) >= ?`,
+      [scrapMonths]
+    )
+    updated += r2.affectedRows
+
+    return { updated }
   }
 }
 
