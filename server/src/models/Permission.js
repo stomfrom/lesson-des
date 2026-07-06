@@ -32,19 +32,27 @@ class Permission {
   }
 
   static async bulkSetPermissions(userId, resource, actions) {
-    // 先清除该用户该资源的所有权限
-    await pool.execute(
-      'DELETE FROM permissions WHERE user_id = ? AND resource = ?',
-      [userId, resource]
-    )
-    // 再批量插入
-    if (actions.length > 0) {
-      const placeholders = actions.map(() => '(?, ?, ?)').join(', ')
-      const values = actions.flatMap(action => [userId, resource, action])
-      await pool.execute(
-        `INSERT INTO permissions (user_id, resource, action) VALUES ${placeholders}`,
-        values
+    const conn = await pool.getConnection()
+    try {
+      await conn.beginTransaction()
+      await conn.execute(
+        'DELETE FROM permissions WHERE user_id = ? AND resource = ?',
+        [userId, resource]
       )
+      if (actions.length > 0) {
+        const placeholders = actions.map(() => '(?, ?, ?)').join(', ')
+        const values = actions.flatMap(action => [userId, resource, action])
+        await conn.execute(
+          `INSERT INTO permissions (user_id, resource, action) VALUES ${placeholders}`,
+          values
+        )
+      }
+      await conn.commit()
+    } catch (err) {
+      await conn.rollback()
+      throw err
+    } finally {
+      conn.release()
     }
   }
 

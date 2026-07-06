@@ -53,8 +53,9 @@ async function handleLogin() {
     userStore.setToken(res.data.token)
     userStore.setUserInfo(res.data.userInfo)
     ElMessage.success('登录成功')
-    const redirect = route.query.redirect || { name: 'Dashboard' }
-    router.push(typeof redirect === 'string' ? redirect : redirect)
+    const raw = route.query.redirect
+    const safe = (typeof raw === 'string' && raw.startsWith('/') && !raw.startsWith('//')) ? raw : null
+    router.push(safe || { name: 'Dashboard' })
   } catch (e) {
     const msg = e.response?.data?.message || '登录失败'
     ElMessage.error(msg)

@@ -2,8 +2,13 @@ import 'dotenv/config'
 
 const requiredEnvVars = ['DB_USER', 'DB_NAME']
 
-if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
-  requiredEnvVars.push('JWT_SECRET')
+if (!process.env.JWT_SECRET) {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('[FATAL] JWT_SECRET is required in production')
+    process.exit(1)
+  }
+  console.warn('[WARN] JWT_SECRET not set — using dev-only fallback. NEVER use this in production.')
+  process.env.JWT_SECRET = 'dev-only-insecure-fallback-key-change-me'
 }
 
 for (const key of requiredEnvVars) {
