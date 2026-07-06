@@ -31,6 +31,11 @@ class User {
   static async verifyPassword(plainText, hashed) {
     return bcrypt.compare(plainText, hashed)
   }
+
+  static async delete(id) {
+    const [result] = await pool.execute('DELETE FROM users WHERE id = ?', [id])
+    return result.affectedRows > 0
+  }
 }
 
 export default User

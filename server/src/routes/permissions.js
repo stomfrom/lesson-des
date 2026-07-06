@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import authMiddleware from '../middleware/auth.js'
-import { listUsers, getUserPermissions, setUserPermissions } from '../controllers/permissionController.js'
+import { listUsers, getUserPermissions, setUserPermissions, deleteUser } from '../controllers/permissionController.js'
 
 const router = Router()
 
@@ -15,5 +15,6 @@ router.use((req, res, next) => {
 router.get('/users', listUsers)
 router.get('/users/:userId/permissions', getUserPermissions)
 router.put('/users/:userId/permissions', setUserPermissions)
+router.delete('/users/:userId', deleteUser)
 
 export default router

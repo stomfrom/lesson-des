@@ -15,3 +15,7 @@ export function setUserPermissions(userId, data) {
 export function createUser(data) {
   return request.post('/auth/register', data)
 }
+
+export function deleteUser(userId) {
+  return request.delete(`/users/${userId}`)
+}
