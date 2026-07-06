@@ -48,18 +48,20 @@
 
     <!-- 设备表格 -->
     <el-table
-      :data="devices"
+      :data="sortedDevices"
       stripe
       style="width: 100%"
       v-loading="loading"
       @row-click="handleRowClick"
       row-class-name="clickable-row"
+      row-key="id"
+      @sort-change="handleSortChange"
     >
-      <el-table-column prop="id" label="ID" width="70" sortable="true" />
-      <el-table-column prop="name" label="设备名" min-width="150" sortable="true" />
-      <el-table-column prop="model" label="型号" min-width="120" sortable="true" />
-      <el-table-column prop="location" label="位置" min-width="150" sortable="true" />
-      <el-table-column prop="status" label="状态" width="150" sortable="true">
+      <el-table-column prop="id" label="ID" width="70" sortable="custom" />
+      <el-table-column prop="name" label="设备名" min-width="150" sortable="custom" />
+      <el-table-column prop="model" label="型号" min-width="120" sortable="custom" />
+      <el-table-column prop="location" label="位置" min-width="150" sortable="custom" />
+      <el-table-column prop="status" label="状态" width="150" sortable="custom">
         <template #default="{ row }">
           <el-tag :type="statusType(row.status)">{{ statusLabel(row.status) }}</el-tag>
           <el-tag v-if="isMaintenanceSoon(row)" type="warning" size="small" class="maintenance-tag">
@@ -67,7 +69,7 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="last_maintenance_date" label="上次维保日期" width="140" sortable="true">
+      <el-table-column prop="last_maintenance_date" label="上次维保日期" width="140" sortable="custom">
         <template #default="{ row }">
           {{ toLocalDate(row.last_maintenance_date) || '—' }}
         </template>
@@ -172,6 +174,30 @@ let abortController = null
 
 const detailVisible = ref(false)
 const detailData = ref(null)
+
+// 排序状态
+const sortProp = ref('')
+const sortOrder = ref('')
+
+/** 排序后的设备列表（客户端排序） */
+const sortedDevices = computed(() => {
+  if (!sortProp.value || !sortOrder.value) return devices.value
+  const arr = [...devices.value]
+  const order = sortOrder.value === 'ascending' ? 1 : -1
+  arr.sort((a, b) => {
+    const va = a[sortProp.value]
+    const vb = b[sortProp.value]
+    if (va == null) return 1
+    if (vb == null) return -1
+    return va > vb ? order : va < vb ? -order : 0
+  })
+  return arr
+})
+
+function handleSortChange({ prop, order }) {
+  sortProp.value = prop || ''
+  sortOrder.value = order || ''
+}
 
 function statusType(s) { return STATUS_MAP[s] || 'info' }
 function statusLabel(s) { return LABEL_MAP[s] || s }

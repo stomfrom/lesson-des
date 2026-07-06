@@ -12,7 +12,6 @@
  * ====================================================
  */
 import Device from '../models/Device.js'
-import Setting from '../models/Setting.js'
 
 /** 允许的设备状态枚举 */
 const VALID_STATUS = ['normal', 'maintenance', 'scrapped']
@@ -55,7 +54,7 @@ export async function getDevice(req, res, next) {
 /** POST /api/devices — 新增设备 */
 export async function createDevice(req, res, next) {
   try {
-    const { name, model, location, status, last_maintenance_date } = req.body
+    const { name, model, location, status, last_maintenance_date, maintenance_interval, scrap_interval } = req.body
 
     // ── 必填校验 ──
     if (!name || !model || !location) {
@@ -80,7 +79,7 @@ export async function createDevice(req, res, next) {
       }
     }
 
-    const device = await Device.create({ name, model, location, status, last_maintenance_date })
+    const device = await Device.create({ name, model, location, status, last_maintenance_date, maintenance_interval, scrap_interval })
     res.status(201).json({ code: 201, data: device, message: '设备创建成功' })
   } catch (err) {
     next(err)
@@ -93,7 +92,7 @@ export async function updateDevice(req, res, next) {
     const id = parseId(req.params.id)
     if (!id) return res.status(400).json({ code: 400, message: '无效的设备 ID' })
 
-    const { name, model, location, status, last_maintenance_date } = req.body
+    const { name, model, location, status, last_maintenance_date, maintenance_interval, scrap_interval } = req.body
     // ── 必填 + 枚举 + 长度 + 日期校验，逻辑同 create ──
     if (!name || !model || !location) {
       return res.status(400).json({ code: 400, message: '设备名、型号、位置为必填字段' })
@@ -114,7 +113,7 @@ export async function updateDevice(req, res, next) {
       }
     }
 
-    const result = await Device.update(id, { name, model, location, status, last_maintenance_date })
+    const result = await Device.update(id, { name, model, location, status, last_maintenance_date, maintenance_interval, scrap_interval })
     if (result.notFound) return res.status(404).json({ code: 404, message: '设备不存在' })
     if (result.noChange) return res.json({ code: 200, message: '数据未变更', data: result })
     res.json({ code: 200, data: result, message: '设备更新成功' })
@@ -126,10 +125,7 @@ export async function updateDevice(req, res, next) {
 /** GET /api/devices/stats — Dashboard 统计数据（含生命周期自动流转） */
 export async function getDeviceStats(req, res, next) {
   try {
-    const settings = await Setting.getAll()
-    const mm = parseInt(settings.maintenance_months, 10) || 11
-    const sm = parseInt(settings.scrap_months, 10) || 12
-    const stats = await Device.getStats(mm, sm)
+    const stats = await Device.getStats()
     res.json({ code: 200, data: stats })
   } catch (err) {
     next(err)

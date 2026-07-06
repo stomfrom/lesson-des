@@ -10,7 +10,7 @@
 import pool from '../config/db.js'
 
 /** 查询返回的完整字段列表 */
-const COLUMNS = 'id, name, model, location, status, last_maintenance_date, created_at, updated_at'
+const COLUMNS = 'id, name, model, location, status, last_maintenance_date, maintenance_interval, scrap_interval, created_at, updated_at'
 
 class Device {
 
@@ -59,10 +59,10 @@ class Device {
   }
 
   /** ── 新增设备 ── */
-  static async create({ name, model, location, status, last_maintenance_date }) {
+  static async create({ name, model, location, status, last_maintenance_date, maintenance_interval, scrap_interval }) {
     const [result] = await pool.execute(
-      'INSERT INTO devices (name, model, location, status, last_maintenance_date) VALUES (?, ?, ?, ?, ?)',
-      [name, model, location, status || 'normal', last_maintenance_date || null]
+      'INSERT INTO devices (name, model, location, status, last_maintenance_date, maintenance_interval, scrap_interval) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [name, model, location, status || 'normal', last_maintenance_date || null, maintenance_interval || 11, scrap_interval || 12]
     )
     return this.findById(result.insertId)   // 返回完整的插入记录
   }
@@ -70,7 +70,7 @@ class Device {
   /** ── 更新设备（支持部分字段更新） ── */
   static async update(id, fields) {
     // 只更新实际传入的字段
-    const allowed = ['name', 'model', 'location', 'status', 'last_maintenance_date']
+    const allowed = ['name', 'model', 'location', 'status', 'last_maintenance_date', 'maintenance_interval', 'scrap_interval']
     const updates = []
     const params = []
 
@@ -99,11 +99,9 @@ class Device {
   }
 
   /** ── Dashboard 统计数据 ── */
-  static async getStats(maintenanceMonths, scrapMonths) {
+  static async getStats() {
     // 先执行生命周期流转规则
-    if (maintenanceMonths && scrapMonths) {
-      await this.applyLifecycleRules(maintenanceMonths, scrapMonths)
-    }
+    await this.applyLifecycleRules()
 
     // Q1: 各状态计数 (GROUP BY)
     const [statusRows] = await pool.execute(
@@ -139,31 +137,27 @@ class Device {
   }
 
   /**
-   * 根据生命周期规则自动流转设备状态
-   * @param {number} maintenanceMonths 未维保 N 月 → 维保中
-   * @param {number} scrapMonths       维保中 N 月 → 已报废
+   * 根据设备自身生命周期配置自动流转状态
+   * 每台设备使用自己的 maintenance_interval / scrap_interval 阈值
    * @returns {{ updated: number }} 更新的设备数
    */
-  static async applyLifecycleRules(maintenanceMonths, scrapMonths) {
+  static async applyLifecycleRules() {
     let updated = 0
 
-    // 规则 1: 正常 → 维保中（超过 maintenanceMonths 个月未维保）
+    // 规则 1: 正常 → 维保中（超过设备自身的 maintenance_interval 个月未维保）
     const [r1] = await pool.execute(
       `UPDATE devices SET status = 'maintenance'
        WHERE status = 'normal'
          AND last_maintenance_date IS NOT NULL
-         AND TIMESTAMPDIFF(MONTH, last_maintenance_date, CURDATE()) >= ?`,
-      [maintenanceMonths]
+         AND TIMESTAMPDIFF(MONTH, last_maintenance_date, CURDATE()) >= maintenance_interval`
     )
     updated += r1.affectedRows
 
-    // 规则 2: 维保中 → 已报废（状态停留在 maintenance 超过 scrapMonths 个月）
-    // 使用 updated_at 近似判断进入维保状态的时长
+    // 规则 2: 维保中 → 已报废（状态停留在 maintenance 超过 scrap_interval 个月）
     const [r2] = await pool.execute(
       `UPDATE devices SET status = 'scrapped'
        WHERE status = 'maintenance'
-         AND TIMESTAMPDIFF(MONTH, updated_at, CURDATE()) >= ?`,
-      [scrapMonths]
+         AND TIMESTAMPDIFF(MONTH, updated_at, CURDATE()) >= scrap_interval`
     )
     updated += r2.affectedRows
 

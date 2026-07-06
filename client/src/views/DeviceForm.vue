@@ -50,6 +50,18 @@
           style="width: 100%"
         />
       </el-form-item>
+
+      <el-divider content-position="left">生命周期自动流转配置</el-divider>
+
+      <el-form-item label="维保触发月数" prop="maintenance_interval">
+        <el-input-number v-model="form.maintenance_interval" :min="1" :max="120" />
+        <span class="form-hint">超过此月数未维保，设备自动变为「维保中」</span>
+      </el-form-item>
+      <el-form-item label="报废触发月数" prop="scrap_interval">
+        <el-input-number v-model="form.scrap_interval" :min="1" :max="120" />
+        <span class="form-hint">处于「维保中」超过此月数，设备自动变为「已报废」</span>
+      </el-form-item>
+
       <el-form-item>
         <el-button type="primary" @click="handleSubmit" :loading="submitting">
           {{ isEdit ? '保存修改' : '新增设备' }}
@@ -91,7 +103,9 @@ const form = reactive({
   model: '',
   location: '',
   status: 'normal',
-  last_maintenance_date: ''
+  last_maintenance_date: '',
+  maintenance_interval: 11,
+  scrap_interval: 12
 })
 
 /** 表单验证规则 */
@@ -128,6 +142,8 @@ async function loadDevice() {
     form.location = d.location
     form.status = d.status
     form.last_maintenance_date = d.last_maintenance_date
+    form.maintenance_interval = d.maintenance_interval ?? 11
+    form.scrap_interval = d.scrap_interval ?? 12
     isDirty.value = false
   } catch (e) {
     ElMessage.error('获取设备信息失败')
@@ -188,4 +204,5 @@ onMounted(() => loadDevice())
 <style scoped>
 .device-form { padding: 24px; }
 .page-header { margin-bottom: 24px; }
+.form-hint { display: block; color: #909399; font-size: 12px; margin-top: 4px; }
 </style>

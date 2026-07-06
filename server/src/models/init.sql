@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS `devices` (
   `location` VARCHAR(200) NOT NULL COMMENT '位置',
   `status` ENUM('normal','maintenance','scrapped') DEFAULT 'normal' COMMENT '状态: 正常/维保中/已报废',
   `last_maintenance_date` DATE DEFAULT NULL COMMENT '上次维保日期',
+  `maintenance_interval` INT DEFAULT 11 COMMENT '维保触发月数',
+  `scrap_interval` INT DEFAULT 12 COMMENT '报废触发月数',
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备信息表';

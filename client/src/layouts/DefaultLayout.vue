@@ -20,7 +20,6 @@
           <router-link to="/">数据概览</router-link>
           <router-link to="/devices">设备管理</router-link>
           <router-link v-if="isAdmin" to="/users">用户管理</router-link>
-          <router-link v-if="isAdmin" to="/settings">生命周期</router-link>
         </nav>
       </div>
       <div class="header-right">
