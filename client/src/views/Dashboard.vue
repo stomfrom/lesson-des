@@ -15,7 +15,7 @@
     <h2>数据概览</h2>
 
     <!-- 统计卡片 -->
-    <div class="stat-row">
+    <div class="stat-row" v-loading="!loaded">
       <el-card class="stat-card total" shadow="hover">
         <div class="stat-value">{{ stats.total }}</div>
         <div class="stat-label">设备总数</div>
@@ -92,12 +92,14 @@ const stats = ref({
   maintenanceDue: 0,
   recent: []
 })
+const loaded = ref(false)
 
 /** 获取统计数据和最近设备 */
 async function fetchStats() {
   try {
     const res = await getDeviceStats()
     stats.value = res.data
+    loaded.value = true
   } catch (e) {
     if (e.response?.status !== 403) {
       ElMessage.error('获取统计数据失败')
