@@ -34,8 +34,10 @@
       <el-select
         v-model="filterStatus"
         placeholder="按状态筛选"
+        multiple
+        collapse-tags
         clearable
-        style="width: 180px; margin-left: 12px"
+        style="width: 260px; margin-left: 12px"
         @change="onFilterChange"
       >
         <el-option v-for="item in STATUS_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
@@ -162,7 +164,7 @@ const canDelete = computed(() => hasPerm('delete'))
 const devices = ref([])
 const loading = ref(false)
 const filterName = ref('')
-const filterStatus = ref('')
+const filterStatus = ref([])
 const currentPage = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
@@ -203,7 +205,7 @@ async function fetchDevices() {
       pageSize: pageSize.value
     }
     if (filterName.value) params.name = filterName.value
-    if (filterStatus.value) params.status = filterStatus.value
+    if (filterStatus.value && filterStatus.value.length > 0) params.status = filterStatus.value.join(',')
     const res = await getDevices(params, { signal: abortController.signal })
     devices.value = res.list || []
     total.value = res.total || 0

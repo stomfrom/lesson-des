@@ -25,10 +25,14 @@ class Device {
       sql += ' AND name LIKE ?'
       params.push(`%${name.replace(/[%_]/g, '\\$&')}%`)
     }
-    // 按状态精确筛选
+    // 按状态筛选（支持多选，逗号分隔）
     if (status) {
-      sql += ' AND status = ?'
-      params.push(status)
+      const statusList = String(status).split(',').filter(Boolean)
+      if (statusList.length > 0) {
+        const placeholders = statusList.map(() => '?').join(',')
+        sql += ` AND status IN (${placeholders})`
+        params.push(...statusList)
+      }
     }
 
     // 总数查询（用于分页组件）
