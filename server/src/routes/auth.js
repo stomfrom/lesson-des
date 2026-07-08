@@ -21,7 +21,7 @@ const loginLimiter = rateLimit({
 const router = Router()
 
 router.post('/auth/login', loginLimiter, login)          // 登录（限流）
-router.post('/auth/register', login)                     // 注册
+router.post('/auth/register', register)                     // 注册
 router.get('/auth/profile', authMiddleware, getProfile)  // 个人信息
 
 export default router

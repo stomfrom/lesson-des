@@ -18,7 +18,7 @@ import { toLocalDate, toLocalDatetime } from './date.js'
  * @param {string} filename - 文件名（不含扩展名）
  */
 export function exportCSV(data, filename = '设备列表') {
-  if (!data.length) return
+  if (!data || !data.length) return
 
   const headers = ['ID', '设备名', '型号', '位置', '状态', '上次维保日期', '创建时间']
   const statusMap = { normal: '正常', maintenance: '维保中', scrapped: '已报废' }

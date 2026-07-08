@@ -38,11 +38,11 @@ export default async function authMiddleware(req, res, next) {
       return res.status(401).json({ code: 401, message: '用户已被删除' })
     }
 
-    // ── 第四步：把用户身份信息挂到 req 上，供后续中间件使用 ──
-    req.user = decoded
+    // ── 第四步：用数据库实际数据更新 req.user（JWT 中的 role 可能已过期） ──
+    req.user = { id: decoded.id, username: user.username, role: user.role }
 
     // ── 第五步：admin 放行（权限路由不查表） ──
-    if (decoded.role === 'admin') {
+    if (user.role === 'admin') {
       return next()
     }
 

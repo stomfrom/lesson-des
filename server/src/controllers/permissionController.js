@@ -101,7 +101,7 @@ export async function setUserPermissions(req, res, next) {
 export async function deleteUser(req, res, next) {
   try {
     const userId = parseInt(req.params.userId, 10)
-    if (isNaN(userId)) return res.status(400).json({ code: 400, message: '无效的用户 ID' })
+    if (isNaN(userId) || userId <= 0) return res.status(400).json({ code: 400, message: '无效的用户 ID' })
 
     // 安全规则
     if (userId === req.user.id) {

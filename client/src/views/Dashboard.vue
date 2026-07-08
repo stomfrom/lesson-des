@@ -104,6 +104,8 @@ async function fetchStats() {
     if (e.response?.status !== 403) {
       ElMessage.error('获取统计数据失败')
     }
+  } finally {
+    loaded.value = true
   }
 }
 
