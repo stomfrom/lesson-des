@@ -2,14 +2,15 @@
  * ====================================================
  * JWT 认证中间件
  * ====================================================
- * 职责：
- * 1. 从 Authorization header 提取 Bearer token
- * 2. 验证 JWT 签名和有效期
- * 3. 校验用户是否仍存在于数据库（防止已删除用户继续访问）
- * 4. 为 admin 跳过权限查表，为 operator 加载权限列表
- * 5. 将用户身份和权限注入 req.user / req.permissions
  *
- * 注意：auth 函数不是工厂——它直接作为中间件使用。
+ * 【答辩核心思路】
+ * 这个中间件是系统的"守门员"，每个受保护的请求都会经过它。
+ * 它的工作链路是：
+ *   提取 Token → 验证签名 → 检查用户是否存在 → 加载权限 → 放行
+ *
+ * 注意两个安全细节：
+ * 1. 即使 JWT 没过期，也要检查用户是否已被管理员删除（防"删号不停权"）
+ * 2. JWT 报错（过期/无效）和系统报错（DB 异常）分开处理，前者返回 401，后者交给全局错误
  * ====================================================
  */
 import jwt from 'jsonwebtoken'
@@ -18,33 +19,36 @@ import Permission from '../models/Permission.js'
 import User from '../models/User.js'
 
 export default async function authMiddleware(req, res, next) {
-  // 步骤 1: 取 Authorization header
+  // ── 第一步：从请求头取 token ──
+  // 客户端发来的 Authorization header 格式必须是 "Bearer <token>"
   const header = req.headers.authorization
   if (!header || !header.startsWith('Bearer ')) {
     return res.status(401).json({ code: 401, message: '未登录，请先登录' })
   }
 
-  // 步骤 2: 解析并验证 JWT
-  const token = header.slice(7)                           // 去掉 "Bearer " 前缀
+  // ── 第二步：验证 JWT 签名 ──
+  const token = header.slice(7)                    // 去掉 "Bearer " 前缀，只取 token 字符串
   try {
-    const decoded = jwt.verify(token, config.jwt.secret)
+    const decoded = jwt.verify(token, config.jwt.secret)    // 如果签名不对或过期，这里会抛异常
 
-    // 步骤 3: 校验用户是否仍存在（防止 "删号不停权"）
+    // ── 第三步：查数据库校验用户是否仍存在（关键安全措施） ──
     const user = await User.findById(decoded.id)
     if (!user) {
+      // 用户已被管理员删除，但 token 还在有效期内
       return res.status(401).json({ code: 401, message: '用户已被删除' })
     }
 
-    // 步骤 4: 将解码后的用户信息挂到请求对象上
+    // ── 第四步：把用户身份信息挂到 req 上，供后续中间件使用 ──
     req.user = decoded
 
-    // 步骤 5: admin 拥有所有权限，直接放行
+    // ── 第五步：admin 放行（权限路由不查表） ──
     if (decoded.role === 'admin') {
       return next()
     }
 
-    // 步骤 6: operator 从 permissions 表加载权限列表
+    // ── 第六步：operator 从 permissions 表加载权限列表 ──
     const perms = await Permission.findByUserId(decoded.id)
+    // 转换成 { resource: [action, action], ... } 的格式，方便权限中间件快速判断
     req.permissions = perms.reduce((acc, p) => {
       if (!acc[p.resource]) acc[p.resource] = []
       acc[p.resource].push(p.action)
@@ -52,14 +56,14 @@ export default async function authMiddleware(req, res, next) {
     }, {})
     next()
   } catch (err) {
-    // 区分 JWT 错误和系统错误
+    // ── 区分 JWT 错误和系统错误 ──
     if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
       const message = err.name === 'TokenExpiredError'
         ? '登录已过期，请重新登录'
         : '无效的登录凭证'
       return res.status(401).json({ code: 401, message })
     }
-    // 数据库异常等非 JWT 错误委托给全局错误处理器
+    // 数据库异常等非 JWT 错误，交给全局错误处理器
     next(err)
   }
 }

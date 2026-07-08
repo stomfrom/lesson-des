@@ -2,14 +2,16 @@
  * ====================================================
  * 设备新增/编辑表单页
  * ====================================================
- * 新增和编辑共用同一组件，通过路由中是否包含 :id
- * 判断当前操作模式。
  *
- * 功能特性：
- * - Element Plus 表单验证（设备名/型号/位置必填）
- * - 编辑模式回显已有数据
- * - 脏表单保护：有未保存修改时离开弹窗确认
- * - 日期选择器禁止选择未来日期
+ * 【答辩核心思路】
+ * 新增和编辑共享同一个组件，通过路由参数中是否包含 :id 来区分。
+ * 这个设计避免了代码重复：表单布局、验证规则、提交逻辑完全一致，
+ * 只是编辑模式需要回填数据。
+ *
+ * 关键设计点：
+ * 1. 脏表单保护：通过 watch 监听表单数据变化，未保存时离开弹窗确认
+ * 2. 编辑加载数据时暂时屏蔽 watcher（用 suppressDirtyWatch 控制）
+ * 3. 生命周期配置字段放在表单底部，以 el-divider 分隔，结构清晰
  * ====================================================
  */
 <template>
@@ -26,6 +28,7 @@
       style="max-width: 600px"
       v-loading="pageLoading"
     >
+      <!-- 基础信息 -->
       <el-form-item label="设备名" prop="name">
         <el-input v-model="form.name" placeholder="请输入设备名" maxlength="100" show-word-limit />
       </el-form-item>
@@ -51,15 +54,16 @@
         />
       </el-form-item>
 
+      <!-- 生命周期自动流转配置（每台设备独立设置） -->
       <el-divider content-position="left">生命周期自动流转配置</el-divider>
 
       <el-form-item label="维保触发月数" prop="maintenance_interval">
         <el-input-number v-model="form.maintenance_interval" :min="1" :max="120" />
-        <span class="form-hint">超过此月数未维保，设备自动变为「维保中」</span>
+        <span class="form-hint">超过此月数未维保，设备自动变为 维保中</span>
       </el-form-item>
       <el-form-item label="报废触发月数" prop="scrap_interval">
         <el-input-number v-model="form.scrap_interval" :min="1" :max="120" />
-        <span class="form-hint">处于「维保中」超过此月数，设备自动变为「已报废」</span>
+        <span class="form-hint">处于 维保中 超过此月数，设备自动变为 已报废</span>
       </el-form-item>
 
       <el-form-item>
@@ -78,6 +82,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getDevice, createDevice, updateDevice } from '@/api/device.js'
 
+/** 设备状态选项 */
 const STATUS_OPTIONS = [
   { label: '正常', value: 'normal' },
   { label: '维保中', value: 'maintenance' },
@@ -87,25 +92,29 @@ const STATUS_OPTIONS = [
 const router = useRouter()
 const route = useRoute()
 const formRef = ref(null)
-const pageLoading = ref(false)
-const submitting = ref(false)
+const pageLoading = ref(false)     // 编辑模式加载数据时的 loading
+const submitting = ref(false)      // 提交按钮的 loading
 
-/** 脏表单标记：表单是否有未保存的修改 */
+/**
+ * 脏表单标记
+ * 当表单数据被修改过且未保存时，离开页面需要弹窗确认
+ * suppressDirtyWatch 用于编辑模式下加载数据时暂时屏蔽 watcher
+ */
 const isDirty = ref(false)
-/** 用于编辑模式加载数据时暂时屏蔽 dirty watch */
 let suppressDirtyWatch = false
 
-/** 当前是否为编辑模式（路由含 :id） */
+/** 当前是否为编辑模式（路由中携带 :id 参数） */
 const isEdit = computed(() => !!route.params.id)
 
+/** 表单数据模型（响应式对象） */
 const form = reactive({
   name: '',
   model: '',
   location: '',
   status: 'normal',
   last_maintenance_date: '',
-  maintenance_interval: 11,
-  scrap_interval: 12
+  maintenance_interval: 11,       // 默认 11 个月
+  scrap_interval: 12              // 默认 12 个月
 })
 
 /** 表单验证规则 */
@@ -124,16 +133,19 @@ const rules = {
   ]
 }
 
-/** 禁止选择未来日期 */
+/** 禁止选择未来日期（维保日期不能是未来的） */
 function disableFutureDate(date) {
   return date.getTime() > Date.now()
 }
 
-/** 编辑模式：加载已有设备数据回填表单 */
+/**
+ * 编辑模式：从后端加载已有设备数据回填表单
+ * 加载期间设置 suppressDirtyWatch = true，避免 watcher 误触发脏标记
+ */
 async function loadDevice() {
-  if (!route.params.id) return
+  if (!route.params.id) return    // 新增模式不执行
   pageLoading.value = true
-  suppressDirtyWatch = true
+  suppressDirtyWatch = true        // 屏蔽 watcher
   try {
     const res = await getDevice(route.params.id)
     const d = res.data
@@ -144,17 +156,17 @@ async function loadDevice() {
     form.last_maintenance_date = d.last_maintenance_date
     form.maintenance_interval = d.maintenance_interval ?? 11
     form.scrap_interval = d.scrap_interval ?? 12
-    isDirty.value = false
+    isDirty.value = false          // 刚加载完数据，不算脏
   } catch (e) {
     ElMessage.error('获取设备信息失败')
     router.push({ name: 'DeviceList' })
   } finally {
     pageLoading.value = false
-    suppressDirtyWatch = false
+    suppressDirtyWatch = false     // 恢复 watcher
   }
 }
 
-/** 提交表单 */
+/** 提交表单（新增/编辑共用） */
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
@@ -177,7 +189,10 @@ async function handleSubmit() {
   }
 }
 
-/** 返回按钮：有脏表单时弹窗确认 */
+/**
+ * 返回/取消
+ * 如果有未保存的修改，弹窗二次确认后再离开
+ */
 async function goBack() {
   if (isDirty.value) {
     try {
@@ -187,13 +202,16 @@ async function goBack() {
         type: 'warning'
       })
     } catch {
-      return
+      return    // 用户点了取消，不离开
     }
   }
   router.push({ name: 'DeviceList' })
 }
 
-/** 监听表单数据变化自动标记脏状态（加载数据期间抑制） */
+/**
+ * 监听表单数据变化 → 自动标记脏表单
+ * deep: true 监听嵌套对象的所有属性变化
+ */
 watch(form, () => {
   if (!suppressDirtyWatch) isDirty.value = true
 }, { deep: true })

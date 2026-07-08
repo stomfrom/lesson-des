@@ -2,20 +2,24 @@
  * ====================================================
  * 权限模型 (Permission)
  * ====================================================
- * 数据表: permissions
- * 职责: 用户的细粒度操作权限管理
  *
- * 关键设计：
- * - bulkSetPermissions 使用数据库事务确保原子性
- *   （先清后插，崩溃时自动回滚）
- * - getPermissionsByUsers 批量查询避免 N+1 问题
+ * 【答辩核心思路】
+ * 这个模块管理用户的细粒度操作权限（谁可以对什么资源做什么操作）。
+ *
+ * 最关键的方法是 bulkSetPermissions：
+ *   它是先删除旧权限，再插入新权限的组合操作。
+ *   如果中间崩溃（比如服务器断电），权限数据会永久丢失。
+ *   所以必须用数据库事务来保护——要么全部成功，要么全部回滚。
+ *
+ * getPermissionsByUsers 使用一次 IN 查询替代 N 次单条查询，
+ * 避免 N+1 性能问题。
  * ====================================================
  */
 import pool from '../config/db.js'
 
 class Permission {
 
-  /** 查询某用户的所有权限 */
+  /** 查询某个用户拥有的全部权限 */
   static async findByUserId(userId) {
     const [rows] = await pool.execute(
       'SELECT resource, action FROM permissions WHERE user_id = ?',
@@ -24,7 +28,7 @@ class Permission {
     return rows
   }
 
-  /** 判断某用户是否有某资源的某操作权限 */
+  /** 判断某个用户是否有某个特定权限 */
   static async hasPermission(userId, resource, action) {
     const [rows] = await pool.execute(
       'SELECT 1 FROM permissions WHERE user_id = ? AND resource = ? AND action = ?',
@@ -49,19 +53,31 @@ class Permission {
   }
 
   /**
-   * 批量设置某用户对某资源的所有操作权限（原子操作）
-   * 先清空后批量插入，用事务保护防止中间态数据丢失
+   * ── 批量设置用户权限（事务保护） ──
+   *
+   * 这是权限系统的核心方法。执行流程：
+   *   ① 从连接池取一条连接
+   *   ② BEGIN TRANSACTION
+   *   ③ DELETE 该用户该资源的所有旧权限
+   *   ④ INSERT 新权限列表
+   *   ⑤ COMMIT（全部成功）或 ROLLBACK（出错时回滚）
+   *   ⑥ 释放连接回连接池
+   *
+   * 如果不加事务，在第③步和第④步之间如果进程崩溃，
+   * 用户的所有权限将永久丢失。
    */
   static async bulkSetPermissions(userId, resource, actions) {
     const conn = await pool.getConnection()
     try {
       await conn.beginTransaction()
+
       // 清空旧权限
       await conn.execute(
         'DELETE FROM permissions WHERE user_id = ? AND resource = ?',
         [userId, resource]
       )
-      // 插入新权限
+
+      // 插入新权限（如果有的话）
       if (actions.length > 0) {
         const placeholders = actions.map(() => '(?, ?, ?)').join(', ')
         const values = actions.flatMap(action => [userId, resource, action])
@@ -70,9 +86,10 @@ class Permission {
           values
         )
       }
-      await conn.commit()
+
+      await conn.commit()         // 全部成功，提交
     } catch (err) {
-      await conn.rollback()       // 异常时回滚到删除前的状态
+      await conn.rollback()       // 出错了，回滚到删除前的状态
       throw err
     } finally {
       conn.release()              // 释放连接回连接池
@@ -80,8 +97,10 @@ class Permission {
   }
 
   /**
-   * 批量查询多个用户的所有权限（避免 N+1）
-   * 传入空数组时直接返回空结果
+   * ── 批量查询多个用户的所有权限 ──
+   *
+   * 用 IN 查询一次性查出所有用户的权限，避免遍历用户时逐条查询
+   * （每查一次就是一次网络往返）。这就是 N+1 问题的标准解法。
    */
   static async getPermissionsByUsers(userIds) {
     if (userIds.length === 0) return []
