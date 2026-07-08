@@ -153,7 +153,7 @@ async function loadDevice() {
     form.model = d.model
     form.location = d.location
     form.status = d.status
-    form.last_maintenance_date = d.last_maintenance_date
+    form.last_maintenance_date = d.last_maintenance_date ? d.last_maintenance_date.slice(0, 10) : ''
     form.maintenance_interval = d.maintenance_interval ?? 11
     form.scrap_interval = d.scrap_interval ?? 12
     isDirty.value = false          // 刚加载完数据，不算脏

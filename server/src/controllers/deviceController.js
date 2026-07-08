@@ -73,13 +73,16 @@ export async function createDevice(req, res, next) {
     }
     // ── 日期格式校验（DATE 类型，仅 YYYY-MM-DD） ──
     if (last_maintenance_date) {
+      const dateStr = String(last_maintenance_date).slice(0, 10)
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/
-      if (!dateRegex.test(last_maintenance_date) || isNaN(Date.parse(last_maintenance_date))) {
+      if (!dateRegex.test(dateStr) || isNaN(Date.parse(dateStr))) {
         return res.status(400).json({ code: 400, message: '维保日期格式无效，应为 YYYY-MM-DD' })
       }
+      // 标准化为 YYYY-MM-DD（兼容 ISO 格式输入）
+      var normalizedDate = dateStr
     }
 
-    const device = await Device.create({ name, model, location, status, last_maintenance_date, maintenance_interval, scrap_interval })
+    const device = await Device.create({ name, model, location, status, last_maintenance_date: normalizedDate || last_maintenance_date, maintenance_interval, scrap_interval })
     res.status(201).json({ code: 201, data: device, message: '设备创建成功' })
   } catch (err) {
     next(err)
@@ -107,13 +110,15 @@ export async function updateDevice(req, res, next) {
       return res.status(400).json({ code: 400, message: '输入字段超出长度限制' })
     }
     if (last_maintenance_date) {
+      const dateStr = String(last_maintenance_date).slice(0, 10)
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/
-      if (!dateRegex.test(last_maintenance_date) || isNaN(Date.parse(last_maintenance_date))) {
+      if (!dateRegex.test(dateStr) || isNaN(Date.parse(dateStr))) {
         return res.status(400).json({ code: 400, message: '维保日期格式无效，应为 YYYY-MM-DD' })
       }
+      var normalizedDate = dateStr
     }
 
-    const result = await Device.update(id, { name, model, location, status, last_maintenance_date, maintenance_interval, scrap_interval })
+    const result = await Device.update(id, { name, model, location, status, last_maintenance_date: normalizedDate || last_maintenance_date, maintenance_interval, scrap_interval })
     if (result.notFound) return res.status(404).json({ code: 404, message: '设备不存在' })
     if (result.noChange) return res.json({ code: 200, message: '数据未变更', data: result })
     res.json({ code: 200, data: result, message: '设备更新成功' })
