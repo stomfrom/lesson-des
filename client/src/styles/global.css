@@ -32,3 +32,32 @@ img {
   max-width: 100%;
   height: auto;
 }
+
+/* ── ElMessage 悬浮卡片样式 ── */
+.el-message {
+  position: fixed !important;
+  top: auto !important;
+  bottom: 24px !important;
+  left: auto !important;
+  right: 24px !important;
+  min-width: 240px !important;
+  max-width: 360px !important;
+  padding: 12px 20px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15) !important;
+  border-left: 4px solid currentColor !important;
+  transform: translateX(0) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.el-message--error {
+  background: #fef0f0 !important;
+  border-color: #f56c6c !important;
+}
+.el-message--success {
+  background: #f0f9eb !important;
+  border-color: #67c23a !important;
+}
+.el-message--warning {
+  background: #fdf6ec !important;
+  border-color: #e6a23c !important;
+}

@@ -32,7 +32,7 @@
     <div class="page-header">
       <h2>设备管理</h2>
       <div class="header-actions">
-        <el-button @click="handleExport" :disabled="devices.length === 0">导出 CSV</el-button>
+        <el-button ref="exportBtnRef" @click="handleExport" :disabled="devices.length === 0">导出 CSV</el-button>
         <el-button v-if="canCreate" type="primary" @click="goAdd">新增设备</el-button>
       </div>
     </div>
@@ -158,6 +158,7 @@ import { useUserStore } from '@/store/modules/user'
 import { getDevices, deleteDevice, getDevice } from '@/api/device.js'
 import { exportCSV } from '@/utils/export.js'
 import { toLocalDate, toLocalDatetime } from '@/utils/date.js'
+import { toastSuccess, toastError } from '@/utils/toast.js'
 
 /** 设备状态的枚举选项（用于 el-select 和状态标签） */
 const STATUS_OPTIONS = [
@@ -203,6 +204,7 @@ let abortController = null           // 请求取消控制器（不是 ref，因
 // ── 详情对话框状态 ──
 const detailVisible = ref(false)
 const detailData = ref(null)
+const exportBtnRef = ref(null)
 
 // ── 排序状态 ──
 const sortProp = ref('')             // 当前排序字段，如 'name'
