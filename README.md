@@ -99,15 +99,20 @@ cd server && NODE_ENV=production npm start
 管理员通过「用户管理」页面为普通用户分配四个操作的任意组合，实时生效（事务保护）。
 
 ### 认证安全
-- 密码使用 bcryptjs 加盐哈希存储（cost=10）
+- 密码使用 bcryptjs 加盐哈希存储（cost=10），**前端不处理密码**
 - 登录采用 JWT，默认 7 天有效期
 - 已删用户的 token 自动失效（每请求查库校验）
+- `req.user` 从数据库读取而非 JWT 载荷，防角色过时
 - 登录端点独立限流（15分钟10次）
 - 前端 token 持久化到 localStorage，JSON 解析异常 try/catch 兜底
 
----
+### UI 反馈
+- **悬浮提示** — 操作结果（成功/失败）以浮动卡片形式显示在右下角，不遮挡页面主体
+- **加载状态** — 列表和表单均有 v-loading 遮罩，Dashboard 统计卡片带加载态
+- **空状态** — 无数据时显示 `el-empty` 友好提示
+- **错误提示** — Element Plus ElMessage 自定义为右下角悬浮卡片样式，带左边框色条
 
-## API 概览
+---
 
 | 方法 | 路径 | 认证 | 权限 | 说明 |
 |------|------|------|------|------|
@@ -134,6 +139,7 @@ cd server && NODE_ENV=production npm start
 shixun/
 ├── init.sql                        # 独立建库建表脚本（跨平台）
 ├── start.bat                       # Windows 一键启动脚本
+├── restart-servers.bat             # 快速重启脚本
 ├── README.md                       # 项目文档
 │
 ├── server/
@@ -186,12 +192,13 @@ shixun/
 │       │   ├── UserManage.vue      # 用户管理（admin）
 │       │   └── NotFound.vue        # 404
 │       └── utils/
+│           ├── toast.js            # 悬浮提示（操作位置附近弹窗）
 │           ├── export.js           # CSV 导出（公式注入防护）
 │           └── date.js             # UTC→本地时区转换
 │
 └── .trae/specs/device-management/
     ├── spec.md                     # 需求规格说明书 v3.0
-    ├── test-report.md              # 生产环境测试报告
+    ├── test-report.md              # 生产环境测试报告（38项全通过）
     ├── audit-report.md             # 深度代码审计报告
     ├── full-chain.md               # 前后端数据库全链路文档
     ├── design-doc.md               # 需求分析与设计文档
@@ -205,9 +212,10 @@ shixun/
 
 | 措施 | 说明 |
 |------|------|
-| 密码哈希 | bcryptjs (salt rounds=10) |
+| 密码哈希 | bcryptjs (salt rounds=10)，**前端不处理密码** |
 | 参数化查询 | 所有 SQL 使用 `?` 占位符，LIKE 通配符已转义 |
 | JWT 认证 | 无状态 token，服务端验签 + 用户存在性校验 |
+| 角色实时性 | `req.user` 从数据库读取而非 JWT 载荷，管理员降级立即生效 |
 | Web 安全 | Helmet + CORS + Rate Limit (100 req/15min) + Body Limit (10KB) |
 | 登录限流 | 独立限流 10次/15min，防暴力破解 |
 | 错误脱敏 | NODE_ENV=production 时不暴露内部错误详情 |
@@ -216,3 +224,4 @@ shixun/
 | 事务保护 | 权限批量写入 BEGIN/COMMIT/ROLLBACK |
 | 请求取消 | 前端 AbortController 防止竞态乱序 |
 | 优雅关闭 | SIGTERM/SIGINT 时释放连接池，10s 超时强制退出 |
+| 日期兼容 | 编辑设备时自动标准化 ISO 日期为 YYYY-MM-DD |
